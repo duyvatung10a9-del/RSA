@@ -1,121 +1,295 @@
 <!DOCTYPE html>
 <html lang="vi">
 <head>
-    <meta charset="UTF-8">
-    <title>RSA Encrypt/Decrypt</title>
-    <style>
-        body {
-            font-family: Arial;
-            max-width: 600px;
-            margin: 40px auto;
-            padding: 20px;
-            background: #f4f4f4;
-            border-radius: 10px;
-        }
-        input, button {
-            padding: 8px;
-            margin: 5px 0;
-            width: 100%;
-        }
-        button {
-            cursor: pointer;
-            background: #007BFF;
-            color: white;
-            border: none;
-        }
-        button:hover {
-            background: #0056b3;
-        }
-        .result {
-            margin-top: 10px;
-            font-weight: bold;
-        }
-    </style>
+<meta charset="UTF-8">
+<title>RSA Encryption Tool</title>
+
+<style>
+* {
+    box-sizing: border-box;
+}
+
+body {
+    margin: 0;
+    font-family: 'Segoe UI', sans-serif;
+    background: linear-gradient(135deg, #1f4037, #99f2c8);
+    display: flex;
+    justify-content: center;
+    padding: 40px 0;
+}
+
+.container {
+    background: white;
+    width: 800px;
+    border-radius: 16px;
+    padding: 35px;
+    box-shadow: 0 20px 40px rgba(0,0,0,0.2);
+}
+
+h1 {
+    text-align: center;
+    margin-bottom: 30px;
+}
+
+.card {
+    background: #f8f9fa;
+    padding: 20px;
+    border-radius: 12px;
+    margin-bottom: 25px;
+}
+
+.card h2 {
+    margin-top: 0;
+    font-size: 18px;
+}
+
+.input-group {
+    margin-bottom: 15px;
+}
+
+.row {
+    display: flex;
+    gap: 40px;   /* khoảng cách lớn giữa p và q */
+}
+
+.col {
+    flex: 1;
+}
+
+label {
+    font-weight: 500;
+    display: block;
+    margin-bottom: 5px;
+}
+
+input, textarea {
+    width: 100%;
+    padding: 10px;
+    border-radius: 8px;
+    border: 1px solid #ccc;
+    font-size: 14px;
+    transition: 0.3s;
+}
+
+input:focus, textarea:focus {
+    border-color: #1f4037;
+    box-shadow: 0 0 5px rgba(31,64,55,0.4);
+    outline: none;
+}
+
+button {
+    padding: 8px 16px;
+    border: none;
+    border-radius: 8px;
+    background: #1f4037;
+    color: white;
+    cursor: pointer;
+    margin-top: 10px;
+    margin-right: 10px;
+    transition: 0.3s;
+}
+
+button:hover {
+    background: #14532d;
+    transform: translateY(-2px);
+}
+
+.suggestions button {
+    background: #6c757d;
+    margin: 5px 5px 0 0;
+}
+
+.suggestions button:hover {
+    background: #495057;
+}
+
+.result-box {
+    background: white;
+    padding: 10px;
+    border-radius: 8px;
+    margin-top: 10px;
+    font-size: 14px;
+    word-wrap: break-word;
+    border: 1px solid #ddd;
+}
+
+.footer {
+    text-align: center;
+    font-size: 12px;
+    margin-top: 10px;
+    color: gray;
+}
+</style>
 </head>
+
 <body>
 
-<h2>🔐 RSA Mã Hóa / Giải Mã</h2>
+<div class="container">
+    <h1>🔐 RSA Encryption & Decryption Tool</h1>
 
-<h3>Nhập khóa</h3>
-<input type="number" id="p" placeholder="p (số nguyên tố)">
-<input type="number" id="q" placeholder="q (số nguyên tố)">
-<input type="number" id="e" placeholder="e (gcd(e, φ(n)) = 1)">
-<button onclick="generateKeys()">Tạo khóa</button>
+    <!-- TẠO KHÓA -->
+    <div class="card">
+        <h2>1️⃣ Tạo khóa RSA</h2>
 
-<div class="result" id="keyResult"></div>
+        <div class="row">
+            <div class="col input-group">
+                <label>Số nguyên tố p</label>
+                <input id="pInput">
+            </div>
 
-<h3>Mã hóa</h3>
-<input type="number" id="message" placeholder="Thông điệp M">
-<button onclick="encrypt()">Mã hóa</button>
+            <div class="col input-group">
+                <label>Số nguyên tố q</label>
+                <input id="qInput">
+            </div>
+        </div>
 
-<h3>Giải mã</h3>
-<input type="number" id="cipher" placeholder="Cipher C">
-<button onclick="decrypt()">Giải mã</button>
+        <div class="input-group">
+            <label>Giá trị e</label>
+            <input id="eInput">
+        </div>
 
-<div class="result" id="result"></div>
+        <button onclick="generateKeys()">Tính khóa</button>
+        <button onclick="useCommonE()">Dùng e = 65537</button>
+
+        <div class="result-box">
+            n: <span id="nValue"></span><br>
+            φ(n): <span id="phiValue"></span><br>
+            d: <span id="dValue"></span>
+        </div>
+
+        <div class="suggestions" id="eSuggestions"></div>
+    </div>
+
+    <!-- MÃ HÓA -->
+    <div class="card">
+        <h2>2️⃣ Mã hóa / Giải mã</h2>
+
+        <div class="input-group">
+            <label>Văn bản gốc</label>
+            <textarea id="textInput" rows="3"></textarea>
+        </div>
+
+        <button onclick="encrypt()">Mã hóa</button>
+
+        <div class="input-group">
+            <label>Cipher</label>
+            <textarea id="cipherInput" rows="3"></textarea>
+        </div>
+
+        <button onclick="decrypt()">Giải mã</button>
+
+        <div id="result" class="result-box"></div>
+    </div>
+
+    <div class="footer">
+        Demo học tập RSA – sử dụng số nhỏ để quan sát
+    </div>
+</div>
 
 <script>
-let n, phi, d, e;
+
+let n, e, d;
 
 function gcd(a, b) {
-    while (b != 0) {
-        let t = b;
-        b = a % b;
-        a = t;
+    while (b !== 0n) {
+        [a, b] = [b, a % b];
     }
     return a;
 }
 
-function modInverse(e, phi) {
-    for (let i = 1; i < phi; i++) {
-        if ((e * i) % phi === 1) {
-            return i;
-        }
+function modInverse(a, m) {
+    let m0 = m, x0 = 0n, x1 = 1n;
+    while (a > 1n) {
+        let q = a / m;
+        [a, m] = [m, a % m];
+        [x0, x1] = [x1 - q * x0, x0];
     }
-    return null;
+    if (x1 < 0n) x1 += m0;
+    return x1;
 }
 
 function modPow(base, exp, mod) {
-    let result = 1;
-    base = base % mod;
-    while (exp > 0) {
-        if (exp % 2 === 1)
+    let result = 1n;
+    base %= mod;
+    while (exp > 0n) {
+        if (exp % 2n === 1n)
             result = (result * base) % mod;
-        exp = Math.floor(exp / 2);
+        exp >>= 1n;
         base = (base * base) % mod;
     }
     return result;
 }
 
+function suggestE(phi) {
+    let container = document.getElementById("eSuggestions");
+    container.innerHTML = "<strong>Gợi ý e hợp lệ:</strong><br>";
+
+    let count = 0;
+    for (let i = 3n; i < phi && count < 8; i += 2n) {
+        if (gcd(i, phi) === 1n) {
+            let btn = document.createElement("button");
+            btn.innerText = i;
+            btn.onclick = () => {
+                document.getElementById("eInput").value = i;
+            };
+            container.appendChild(btn);
+            count++;
+        }
+    }
+}
+
 function generateKeys() {
-    let p = parseInt(document.getElementById("p").value);
-    let q = parseInt(document.getElementById("q").value);
-    e = parseInt(document.getElementById("e").value);
+    let p = BigInt(document.getElementById("pInput").value);
+    let q = BigInt(document.getElementById("qInput").value);
+    e = BigInt(document.getElementById("eInput").value);
 
     n = p * q;
-    phi = (p - 1) * (q - 1);
+    let phi = (p - 1n) * (q - 1n);
 
-    if (gcd(e, phi) !== 1) {
-        document.getElementById("keyResult").innerHTML = "❌ e không hợp lệ!";
+    if (gcd(e, phi) !== 1n) {
+        alert("e không nguyên tố cùng phi(n)");
         return;
     }
 
     d = modInverse(e, phi);
-    document.getElementById("keyResult").innerHTML =
-        `n = ${n}<br>φ(n) = ${phi}<br>d = ${d}`;
+
+    document.getElementById("nValue").innerText = n;
+    document.getElementById("phiValue").innerText = phi;
+    document.getElementById("dValue").innerText = d;
+
+    suggestE(phi);
+}
+
+function useCommonE() {
+    document.getElementById("eInput").value = 65537;
 }
 
 function encrypt() {
-    let M = parseInt(document.getElementById("message").value);
-    let C = modPow(M, e, n);
-    document.getElementById("result").innerHTML = "Cipher C = " + C;
+    let text = document.getElementById("textInput").value;
+    let result = [];
+
+    for (let i = 0; i < text.length; i++) {
+        let m = BigInt(text.charCodeAt(i));
+        let c = modPow(m, e, n);
+        result.push(c.toString());
+    }
+
+    document.getElementById("cipherInput").value = result.join(" ");
 }
 
 function decrypt() {
-    let C = parseInt(document.getElementById("cipher").value);
-    let M = modPow(C, d, n);
-    document.getElementById("result").innerHTML = "Thông điệp M = " + M;
+    let parts = document.getElementById("cipherInput").value.split(" ");
+    let result = "";
+
+    for (let part of parts) {
+        if (part.trim() === "") continue;
+        let m = modPow(BigInt(part), d, n);
+        result += String.fromCharCode(Number(m));
+    }
+
+    document.getElementById("result").innerText = "Giải mã: " + result;
 }
+
 </script>
 
 </body>
