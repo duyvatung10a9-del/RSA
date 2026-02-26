@@ -244,7 +244,7 @@ function generateKeys() {
     let phi = (p - 1n) * (q - 1n);
 
     if (n <= 255n) {
-        validation.innerHTML = `n = ${n} quá nhỏ. Cần n > 255 để mã hóa ASCII.`;
+        validation.innerHTML = `n = ${n} quá nhỏ. Cần n > 255 để mã hóa ASCII.(Hãy nhập p, q lớn hơn)`;
         return;
     }
 
