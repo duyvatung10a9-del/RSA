@@ -2,7 +2,7 @@
 <html lang="vi">
 <head>
 <meta charset="UTF-8">
-<title>RSA Encryption Tool</title>
+<title>RSA Encryption Tool – Nhập khóa công khai</title>
 
 <style>
 * { box-sizing: border-box; }
@@ -91,6 +91,13 @@ button:hover {
     margin-top: 10px;
     color: gray;
 }
+
+/* nhãn phụ cho khóa nhập */
+.small-note {
+    font-size: 12px;
+    color: #666;
+    margin-top: 4px;
+}
 </style>
 </head>
 
@@ -99,7 +106,6 @@ button:hover {
 <div class="container">
 <h1>🔐 RSA Encryption & Decryption Tool</h1>
 
-<!-- ================= KEY GENERATION ================= -->
 <div class="card">
 <h2>1️⃣ Tạo khóa RSA</h2>
 
@@ -130,22 +136,23 @@ n: <span id="nValue"></span><br>
 φ(n): <span id="phiValue"></span><br>
 d: <span id="dValue"></span>
 </div>
+
+<div id="eSuggestions"></div>
 </div>
 
-<!-- ================= ENCRYPT / DECRYPT ================= -->
 <div class="card">
 <h2>2️⃣ Mã hóa / Giải mã</h2>
 
-<h3>🔓 Nhập khóa công khai để mã hóa</h3>
-
-<div class="input-group">
-<label>Khóa công khai n</label>
-<input id="publicN">
-</div>
-
-<div class="input-group">
-<label>Khóa công khai e</label>
-<input id="publicE">
+<!-- THÊM PHẦN NHẬP KHÓA CÔNG KHAI Ở ĐÂY (giữ nguyên toàn bộ) -->
+<div class="input-group" style="display: flex; gap: 15px; align-items: flex-end; margin-bottom: 20px;">
+    <div style="flex:1">
+        <label>🔑 n (công khai) <span style="font-weight:normal; font-size:12px;">(để trống nếu dùng khóa từ mục 1)</span></label>
+        <input id="pubNInput" placeholder="nhập n">
+    </div>
+    <div style="flex:1">
+        <label>📌 e (công khai)</label>
+        <input id="pubEInput" placeholder="nhập e">
+    </div>
 </div>
 
 <div class="input-group">
@@ -160,7 +167,7 @@ d: <span id="dValue"></span>
 <textarea id="cipherInput" rows="3"></textarea>
 </div>
 
-<button onclick="decrypt()">Giải mã (d từ phần 1)</button>
+<button onclick="decrypt()">Giải mã</button>
 
 <div id="result" class="result-box"></div>
 </div>
@@ -173,9 +180,9 @@ Demo học tập RSA – sử dụng số nhỏ để quan sát
 
 <script>
 
-let n, e, d;
+let n, e, d;   // khóa từ phần 1 (mặc định)
 
-// ===== PRIME CHECK =====
+// ================= PRIME CHECK =================
 function isPrime(num) {
     if (num < 2n) return false;
     for (let i = 2n; i * i <= num; i++) {
@@ -184,7 +191,24 @@ function isPrime(num) {
     return true;
 }
 
-// ===== BASIC MATH =====
+function nearestPrime(num) {
+    let lower = num;
+    let upper = num;
+
+    while (lower > 2n) {
+        lower--;
+        if (isPrime(lower)) break;
+    }
+
+    while (true) {
+        upper++;
+        if (isPrime(upper)) break;
+    }
+
+    return { lower, upper };
+}
+
+// ================= BASIC MATH =================
 function gcd(a, b) {
     while (b !== 0n) [a, b] = [b, a % b];
     return a;
@@ -213,7 +237,7 @@ function modPow(base, exp, mod) {
     return result;
 }
 
-// ===== KEY GENERATION =====
+// ================= KEY GENERATION =================
 function generateKeys() {
 
     let p = BigInt(document.getElementById("pInput").value);
@@ -223,16 +247,28 @@ function generateKeys() {
     let validation = document.getElementById("validationMsg");
     validation.innerHTML = "";
 
-    if (!isPrime(p) || !isPrime(q)) {
-        validation.innerHTML = "p và q phải là số nguyên tố!";
-        return;
+    if (!isPrime(p)) {
+        let sug = nearestPrime(p);
+        validation.innerHTML += `p không phải SNT. Gợi ý: ${sug.lower} hoặc ${sug.upper}<br>`;
     }
+
+    if (!isPrime(q)) {
+        let sug = nearestPrime(q);
+        validation.innerHTML += `q không phải SNT. Gợi ý: ${sug.lower} hoặc ${sug.upper}<br>`;
+    }
+
+    if (validation.innerHTML !== "") return;
 
     n = p * q;
     let phi = (p - 1n) * (q - 1n);
 
+    if (n <= 255n) {
+        validation.innerHTML = `n = ${n} quá nhỏ. Cần n > 255 để mã hóa ASCII.(Hãy nhập p, q lớn hơn)`;
+        return;
+    }
+
     if (gcd(e, phi) !== 1n) {
-        validation.innerHTML = "e phải nguyên tố cùng phi(n)";
+        validation.innerHTML = "e không nguyên tố cùng phi(n)";
         return;
     }
 
@@ -241,43 +277,60 @@ function generateKeys() {
     document.getElementById("nValue").innerText = n;
     document.getElementById("phiValue").innerText = phi;
     document.getElementById("dValue").innerText = d;
-
-    // Tự động điền khóa công khai xuống phần mã hóa
-    document.getElementById("publicN").value = n;
-    document.getElementById("publicE").value = e;
 }
 
-// ===== ENCRYPT =====
+// ================= ENCRYPT (có hỗ trợ khóa nhập tay) =================
 function encrypt() {
+    // Lấy giá trị từ ô nhập khóa công khai (nếu có)
+    let pubNInput = document.getElementById("pubNInput").value.trim();
+    let pubEInput = document.getElementById("pubEInput").value.trim();
 
-    let localN = BigInt(document.getElementById("publicN").value);
-    let localE = BigInt(document.getElementById("publicE").value);
+    let current_n, current_e;
+
+    // Kiểm tra nếu người dùng nhập khóa công khai
+    if (pubNInput !== "" && pubEInput !== "") {
+        try {
+            current_n = BigInt(pubNInput);
+            current_e = BigInt(pubEInput);
+            if (current_n <= 0n || current_e <= 0n) throw new Error("Giá trị phải > 0");
+        } catch (err) {
+            alert("Khóa công khai nhập không hợp lệ. Vui lòng nhập số nguyên dương.");
+            return;
+        }
+        // Kiểm tra n > 255 (để mã hóa ASCII)
+        if (current_n <= 255n) {
+            alert(`n = ${current_n} quá nhỏ. Cần n > 255 để mã hóa ký tự ASCII.`);
+            return;
+        }
+    } else {
+        // Dùng khóa từ phần 1
+        if (!n || !e) {
+            alert("Hãy tạo khóa ở mục 1 hoặc nhập khóa công khai thủ công.");
+            return;
+        }
+        current_n = n;
+        current_e = e;
+    }
 
     let text = document.getElementById("textInput").value;
     let result = [];
 
     for (let i = 0; i < text.length; i++) {
         let m = BigInt(text.charCodeAt(i));
-
-        if (m >= localN) {
-            alert("Ký tự ASCII ≥ n. Hãy chọn n lớn hơn.");
+        if (m >= current_n) {
+            alert(`Ký tự '${text[i]}' có mã ASCII ${m} ≥ n (${current_n}). Hãy dùng n lớn hơn.`);
             return;
         }
-
-        let c = modPow(m, localE, localN);
+        let c = modPow(m, current_e, current_n);
         result.push(c.toString());
     }
 
     document.getElementById("cipherInput").value = result.join(" ");
 }
 
-// ===== DECRYPT =====
+// ================= DECRYPT (giữ nguyên, dùng khóa từ phần 1) =================
 function decrypt() {
-
-    if (!d) {
-        alert("Hãy tạo khóa ở phần 1 để có d!");
-        return;
-    }
+    if (!d) return alert("Hãy tạo khóa ở mục 1 trước khi giải mã (cần khóa bí mật d).");
 
     let parts = document.getElementById("cipherInput").value.split(" ");
     let result = "";
