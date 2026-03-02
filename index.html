@@ -2,7 +2,7 @@
 <html lang="vi">
 <head>
 <meta charset="UTF-8">
-<title>RSA Encryption Tool – Nhập khóa công khai</title>
+<title>RSA Encryption Tool – Nhập khóa công khai + gợi ý e</title>
 
 <style>
 * { box-sizing: border-box; }
@@ -92,11 +92,32 @@ button:hover {
     color: gray;
 }
 
-/* nhãn phụ cho khóa nhập */
 .small-note {
     font-size: 12px;
     color: #666;
     margin-top: 4px;
+}
+
+/* gợi ý e */
+.e-suggestions {
+    margin-top: 8px;
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    align-items: center;
+}
+
+.e-suggestions button {
+    margin: 0;
+    padding: 4px 12px;
+    font-size: 13px;
+    background: #e9ecef;
+    color: #1f4037;
+    border: 1px solid #aaa;
+}
+
+.e-suggestions button:hover {
+    background: #d4edda;
 }
 </style>
 </head>
@@ -129,6 +150,14 @@ button:hover {
 <button onclick="generateKeys()">Tính khóa</button>
 <button onclick="useCommonE()">Dùng e = 65537</button>
 
+<!-- PHẦN GỢI Ý E ĐÃ ĐƯỢC KHÔI PHỤC VÀ NÂNG CẤP -->
+<div id="eSuggestions" class="e-suggestions">
+    <span style="font-weight:500;">Gợi ý e:</span>
+    <button onclick="setE(3)">3</button>
+    <button onclick="setE(17)">17</button>
+    <button onclick="setE(65537)">65537</button>
+</div>
+
 <div id="validationMsg" class="error"></div>
 
 <div class="result-box">
@@ -137,13 +166,12 @@ n: <span id="nValue"></span><br>
 d: <span id="dValue"></span>
 </div>
 
-<div id="eSuggestions"></div>
 </div>
 
 <div class="card">
 <h2>2️⃣ Mã hóa / Giải mã</h2>
 
-<!-- THÊM PHẦN NHẬP KHÓA CÔNG KHAI Ở ĐÂY (giữ nguyên toàn bộ) -->
+<!-- PHẦN NHẬP KHÓA CÔNG KHAI (giữ nguyên) -->
 <div class="input-group" style="display: flex; gap: 15px; align-items: flex-end; margin-bottom: 20px;">
     <div style="flex:1">
         <label>🔑 n (công khai) <span style="font-weight:normal; font-size:12px;">(để trống nếu dùng khóa từ mục 1)</span></label>
@@ -235,6 +263,11 @@ function modPow(base, exp, mod) {
         base = (base * base) % mod;
     }
     return result;
+}
+
+// ================= HÀM HỖ TRỢ GỢI Ý E =================
+function setE(val) {
+    document.getElementById("eInput").value = val;
 }
 
 // ================= KEY GENERATION =================
